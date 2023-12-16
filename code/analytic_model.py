@@ -141,7 +141,7 @@ for filename in good_files_list:
 
 # Plot bias adjusted traces
 num_plot_rows = 2
-num_plot_cols = 5
+num_plot_cols = 3
 fig1, axes1 = plt.subplots(num_plot_rows, num_plot_cols)
 fig2, axes2 = plt.subplots(num_plot_rows, num_plot_cols)
 fig3, axes3 = plt.subplots(num_plot_rows, num_plot_cols)
@@ -152,7 +152,8 @@ axes_list = [axes1, axes2, axes3, axes4]
 fig_ts1, axes_ts1 = plt.subplots(num_plot_rows, num_plot_cols)
 fig_ts2, axes_ts2 = plt.subplots(num_plot_rows, num_plot_cols)
 fig_ts3, axes_ts3 = plt.subplots(num_plot_rows, num_plot_cols)
-axes_ts_list = [axes_ts1, axes_ts2, axes_ts3]
+fig_ts4, axes_ts4 = plt.subplots(num_plot_rows, num_plot_cols)
+axes_ts_list = [axes_ts1, axes_ts2, axes_ts3, axes_ts4]
 
 # Plot row major
 for idx, filename in enumerate(good_files_list):
@@ -164,20 +165,24 @@ for idx, filename in enumerate(good_files_list):
     print(f"Axes {axes_dex}, row {row_dex}, col {col_dex}. {idx}. {filename}")
     # Plot XY data
     axes_list[axes_dex][row_dex][col_dex].scatter(data_files_dict[filename]["Adj Freq. (MHz)"], 
-            data_files_dict[filename]["Force (kN)"])
+            data_files_dict[filename]["Force (kN)"], label="Raw Data")
     axes_list[axes_dex][row_dex][col_dex].scatter(data_files_dict[filename]["Adj Freq. (MHz)"], 
-            data_files_dict[filename]["Avg. Force (kN)"])
+            data_files_dict[filename]["Avg. Force (kN)"], label="Avg Force")
     axes_list[axes_dex][row_dex][col_dex].scatter(data_files_dict[filename]["Avg. Adj Freq. (MHz)"], 
-            data_files_dict[filename]["Avg. Force (kN)"])
+            data_files_dict[filename]["Avg. Force (kN)"], label="Avg Force and Avg Freq")
     axes_list[axes_dex][row_dex][col_dex].scatter(
         data_files_dict[filename]["Avg. Adj Freq. (MHz)"], 
-        data_files_dict[filename]["Lin Est Force (kN)"], c='red')
+        data_files_dict[filename]["Lin Est Force (kN)"], c='red', label='Linear')
     axes_list[axes_dex][row_dex][col_dex].scatter(
         data_files_dict[filename]["Avg. Adj Freq. (MHz)"], 
-        data_files_dict[filename]["Poly Fit Force (kN)"], c='purple')
+        data_files_dict[filename]["Poly Fit Force (kN)"], c='purple', label='Quadratic')
     axes_list[axes_dex][row_dex][col_dex].scatter(
         data_files_dict[filename]["Avg. Adj Freq. (MHz)"], 
-        data_files_dict[filename]["FFNN Fit Force (kN)"], c='black')
+        data_files_dict[filename]["FFNN Fit Force (kN)"], c='black',
+        marker='x', s=3, label='Neural Net')
+    axes_list[axes_dex][row_dex][col_dex].legend(loc="lower left")
+    axes_list[axes_dex][row_dex][col_dex].set_xlabel("Freq. Deviation (kHz)")
+    axes_list[axes_dex][row_dex][col_dex].set_ylabel("Force (kN)")
 
     left_freq = min(data_files_dict[filename]["Adj Freq. (MHz)"])
     axes_list[axes_dex][row_dex][col_dex].text(-115, 70, filename)
@@ -205,6 +210,9 @@ for idx, filename in enumerate(good_files_list):
         data_files_dict[filename]["FFNN Fit Force (kN)"],
         color='black')
     axes_ts_list[axes_dex][row_dex][col_dex].set_ylim(-15, 85)
+    axes_ts_list[axes_dex][row_dex][col_dex].set_xlabel("Time (s)")
+    axes_ts_list[axes_dex][row_dex][col_dex].set_ylabel("Force (kN)")
+    
 
     # Twinning frequency axis
     ax2 = axes_ts_list[axes_dex][row_dex][col_dex].twinx()
@@ -218,6 +226,7 @@ for idx, filename in enumerate(good_files_list):
         color=(0.6, 0.6, 0.2, 0.5))
     ax2.text(0,-.02, filename)
     ax2.set_ylim(-80, 10)
+    ax2.set_ylabel("Freq. Deviation (kHz)")
 #
 plt.show(block=False)
 
