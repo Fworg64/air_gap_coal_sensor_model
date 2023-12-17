@@ -75,10 +75,9 @@ for filename in good_files_list:
 
 number_parallel_jobs = 3
 
-number_cross_validations = 3
+number_cross_validations = 30
 my_test_size = 0.5
 
-scorings = ['r2','neg_mean_squared_error']
 
 # Add first order difference to sample
 add_diffs = False
@@ -112,6 +111,8 @@ that_time = time.time()
 print("Data preprocessed in {0} sec; performing experiments".format(that_time - this_time),
       end='', flush=True)
 this_time = time.time()
+
+scorings = ['r2','neg_mean_squared_error']
 
 # Preprocess steps poly or not
 poly_preprocess = [
