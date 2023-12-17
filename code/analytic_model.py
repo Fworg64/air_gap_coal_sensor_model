@@ -24,31 +24,40 @@ for filename in good_files_list:
     fullpath = "../data/coal_csvs/" + filename
     data_files_dict[filename] = pd.read_csv(fullpath)
 
+chan_names_list = ["Freq. A (MHz)", "Freq. B (MHz)", "Freq. C (MHz)", "Freq. D (MHz)"]
+
 # Preprocess data to have bias adjusted based on first 0.5s from sample
 x_vals = []
 y_vals = []
 y2_vals = []
 for filename in good_files_list:
-    # Auto-Bias adjustment (subtract average of first 0.5s from sample)
-    bias_adjustment_segment = data_files_dict[filename].loc[
-        data_files_dict[filename]["Time (s)"] < 0.5]
-    freq_bias_adjustment_val = np.max(bias_adjustment_segment["Freq. (MHz)"])
-    data_files_dict[filename]["Adj Freq. (MHz)"] = \
-        1000.0 * (data_files_dict[filename]["Freq. (MHz)"] - freq_bias_adjustment_val)
-
+    
     # Compute avg force values
     avg_len = 50
     data_files_dict[filename]["Avg. Force (kN)"] = \
         np.convolve(data_files_dict[filename]["Force (kN)"], 
           np.ones(avg_len), 'same') / avg_len
+    
+    # Compute bias compensted avg values
+    for chan_name in chan_names_list:
+      # Auto-Bias adjustment (subtract average of first 0.5s from sample)
+      bias_adjustment_segment = data_files_dict[filename].loc[
+          data_files_dict[filename]["Time (s)"] < 0.5]
+      freq_bias_adjustment_val = np.max(bias_adjustment_segment[chan_name])
+      data_files_dict[filename][f"Adj {chan_name}"] = \
+          1000.0 * (freq_bias_adjustment_val - data_files_dict[filename][chan_name])
 
-    # Compute avg sensor values
-    data_files_dict[filename]["Avg. Adj Freq. (MHz)"] = \
-        np.convolve(data_files_dict[filename]["Adj Freq. (MHz)"],
-          np.ones(avg_len), 'same') / avg_len
+      # Compute avg sensor values
+      data_files_dict[filename][f"Avg. Adj {chan_name}"] = \
+          np.convolve(data_files_dict[filename][f"Adj {chan_name}"],
+            np.ones(avg_len), 'same') / avg_len
+      # TODO high pass filter
 
     # Glob data into X and Y lists
-    x_vals.extend(data_files_dict[filename]["Avg. Adj Freq. (MHz)"].to_list())
+    chan_vals = [data_files_dict[filename][f"Avg. Adj {chan_name}"].to_list() 
+                  for chan_name in chan_names_list]
+    chan_time_list = [list(vals) for vals in zip(*chan_vals)]
+    x_vals.extend(chan_time_list) # each entry is all 4 channels at same time
     y_vals.extend(data_files_dict[filename]["Force (kN)"].to_list())
     y2_vals.extend(data_files_dict[filename]["Avg. Force (kN)"].to_list())
 
@@ -56,14 +65,10 @@ for filename in good_files_list:
 # Linear Model
 ##
 
-# Reshape X so that each sample is its own row
-x_vals = np.array(x_vals).reshape(-1,1)
-
 # Fit data with least squares
 reg = linear_model.LinearRegression()
 reg.fit(x_vals, y2_vals)
-lin_fit_coeff = reg.coef_[0]
-print(reg.coef_)
+print(f"Linear coef: {reg.coef_}, Intercept: {reg.intercept_}")
 
 y_hats = reg.predict(x_vals)
 
@@ -74,8 +79,11 @@ print(r2_score(y2_vals, y_hats))
 
 # Add model data to data dict
 for filename in good_files_list:
+    chan_vals = [data_files_dict[filename][f"Avg. Adj {chan_name}"].to_list() 
+                  for chan_name in chan_names_list]
+    chan_time_list = [list(vals) for vals in zip(*chan_vals)]
     data_files_dict[filename]["Lin Est Force (kN)"] = \
-      lin_fit_coeff * data_files_dict[filename]["Avg. Adj Freq. (MHz)"] 
+      reg.predict(chan_time_list)
 
 ##
 # Poly fit
@@ -87,7 +95,7 @@ poly_reg_model = linear_model.LinearRegression()
 poly_reg_model.fit(x_poly_vals, y2_vals)
 y2_poly_hats = poly_reg_model.predict(x_poly_vals)
 
-print(poly_reg_model.coef_)
+print(f"Poly coef: {poly_reg_model.coef_}, Intercept: {poly_reg_model.intercept_}")
 print("poly MSE: ")
 print(mean_squared_error(y2_vals, y2_poly_hats))
 print("poly R2: ")
@@ -95,23 +103,27 @@ print(r2_score(y2_vals, y2_poly_hats))
 
 # Add model data to data dict
 for filename in good_files_list:
+    chan_vals = [data_files_dict[filename][f"Avg. Adj {chan_name}"].to_list() 
+                  for chan_name in chan_names_list]
+    chan_time_list = [list(vals) for vals in zip(*chan_vals)]
     data_files_dict[filename]["Poly Fit Force (kN)"] = \
         poly_reg_model.predict(poly.fit_transform(
-            np.array(data_files_dict[filename]["Avg. Adj Freq. (MHz)"]).reshape(-1,1)))
+            np.array(chan_time_list)))
 
 ##
 # FFNN fit
 ##
 print("Fitting ffnn...")
 # Window the xvals
-nn_window_size = 10
+nn_window_size = 4
 nn_window_x_vals = []
 nn_window_y_vals = []
 for index in range(len(x_vals)-nn_window_size + 1):
-    nn_window_x_vals.append(
-      x_vals[index:index+nn_window_size])
+    chanelled_vals = x_vals[index:index+nn_window_size]
+    # Flatten X to be abcd abcd abcd...
+    nn_window_x_vals.append([val for row in chanelled_vals for val in row])
     nn_window_y_vals.append(y2_vals[index+nn_window_size-1])
-nn_window_x_vals = np.array(nn_window_x_vals)[...,0] # drop last dim
+
 nn_window_y_vals = np.array(nn_window_y_vals) # add inner dim
 
 
@@ -129,12 +141,15 @@ print(r2_score(nn_window_y_vals, ffnn_y_hat))
 ## Add model data to data dict
 for filename in good_files_list:
     # break file data into windows
+    chan_vals = [data_files_dict[filename][f"Avg. Adj {chan_name}"].to_list() 
+                  for chan_name in chan_names_list]
+    chan_time_list = [list(vals) for vals in zip(*chan_vals)]
     windowed_vals = []
-    file_vals = data_files_dict[filename]["Avg. Adj Freq. (MHz)"].to_list()
-    for index in range(len(file_vals) - nn_window_size +1):
-        windowed_vals.append(file_vals[index:index+nn_window_size])
+    for index in range(len(chan_time_list) - nn_window_size +1):
+        chanelled_vals = chan_time_list[index:index+nn_window_size]
+        windowed_vals.append([val for row in chanelled_vals for val in row]) # flatten
     windowed_vals = [windowed_vals[0]] * (nn_window_size-1) + windowed_vals
-    
+
     data_files_dict[filename]["FFNN Fit Force (kN)"] = \
       ffnn.predict(windowed_vals)
 
@@ -163,32 +178,46 @@ for idx, filename in enumerate(good_files_list):
     col_dex = idx % num_plot_cols
 
     print(f"Axes {axes_dex}, row {row_dex}, col {col_dex}. {idx}. {filename}")
-    # Plot XY data
-    axes_list[axes_dex][row_dex][col_dex].scatter(data_files_dict[filename]["Adj Freq. (MHz)"], 
-            data_files_dict[filename]["Force (kN)"], label="Raw Data")
-    axes_list[axes_dex][row_dex][col_dex].scatter(data_files_dict[filename]["Adj Freq. (MHz)"], 
-            data_files_dict[filename]["Avg. Force (kN)"], label="Avg Force")
-    axes_list[axes_dex][row_dex][col_dex].scatter(data_files_dict[filename]["Avg. Adj Freq. (MHz)"], 
-            data_files_dict[filename]["Avg. Force (kN)"], label="Avg Force and Avg Freq")
+    # Plot channel freq vs avg'd lcm force
     axes_list[axes_dex][row_dex][col_dex].scatter(
-        data_files_dict[filename]["Avg. Adj Freq. (MHz)"], 
+            data_files_dict[filename]["Avg. Force (kN)"], 
+            data_files_dict[filename]["Avg. Adj Freq. A (MHz)"], 
+            label="Chan A", marker='x', color="blue", s=2)
+    axes_list[axes_dex][row_dex][col_dex].scatter(
+            data_files_dict[filename]["Avg. Force (kN)"], 
+            data_files_dict[filename]["Avg. Adj Freq. B (MHz)"], 
+            label="Chan B", marker='+', color="blue", s=2)
+    axes_list[axes_dex][row_dex][col_dex].scatter(
+            data_files_dict[filename]["Avg. Force (kN)"], 
+            data_files_dict[filename]["Avg. Adj Freq. C (MHz)"], 
+            label="Chan C", marker='o', color="blue", s=2)
+    axes_list[axes_dex][row_dex][col_dex].scatter(
+            data_files_dict[filename]["Avg. Force (kN)"], 
+            data_files_dict[filename]["Avg. Adj Freq. C (MHz)"], 
+            label="Chan D", marker='*', color="blue", s=2)
+    # Plot model fits on twin'd x axis
+    twin_force_axis = axes_list[axes_dex][row_dex][col_dex].twinx()
+    twin_force_axis.scatter(
+        data_files_dict[filename]["Avg. Force (kN)"], 
         data_files_dict[filename]["Lin Est Force (kN)"], c='red', label='Linear')
-    axes_list[axes_dex][row_dex][col_dex].scatter(
-        data_files_dict[filename]["Avg. Adj Freq. (MHz)"], 
+    twin_force_axis.scatter(
+        data_files_dict[filename]["Avg. Force (kN)"], 
         data_files_dict[filename]["Poly Fit Force (kN)"], c='purple', label='Quadratic')
-    axes_list[axes_dex][row_dex][col_dex].scatter(
-        data_files_dict[filename]["Avg. Adj Freq. (MHz)"], 
+    twin_force_axis.scatter(
+        data_files_dict[filename]["Avg. Force (kN)"], 
         data_files_dict[filename]["FFNN Fit Force (kN)"], c='black',
-        marker='x', s=3, label='Neural Net')
-    axes_list[axes_dex][row_dex][col_dex].legend(loc="lower left")
-    axes_list[axes_dex][row_dex][col_dex].set_xlabel("Freq. Deviation (kHz)")
-    axes_list[axes_dex][row_dex][col_dex].set_ylabel("Force (kN)")
+        marker='D', s=3, label='Neural Net')
+    twin_force_axis.set_ylabel("Estimated Force")
+    twin_force_axis.set_ylim(-5,50)
 
-    left_freq = min(data_files_dict[filename]["Adj Freq. (MHz)"])
+    axes_list[axes_dex][row_dex][col_dex].legend(loc="lower right")
+    axes_list[axes_dex][row_dex][col_dex].set_ylabel("Freq. Deviation (kHz)")
+    axes_list[axes_dex][row_dex][col_dex].set_xlabel("Force (kN)")
+
     axes_list[axes_dex][row_dex][col_dex].text(-115, 70, filename)
-    axes_list[axes_dex][row_dex][col_dex].set_xlim(-120, 10)
+    axes_list[axes_dex][row_dex][col_dex].set_ylim(-10, 100)
     #axes_list[axes_dex][row_dex][col_dex].set_xlim(1.65, 1.85)
-    axes_list[axes_dex][row_dex][col_dex].set_ylim(-15, 85)
+    axes_list[axes_dex][row_dex][col_dex].set_xlim(-5, 50)
 
     # plot time data
     axes_ts_list[axes_dex][row_dex][col_dex].plot(
@@ -212,21 +241,25 @@ for idx, filename in enumerate(good_files_list):
     axes_ts_list[axes_dex][row_dex][col_dex].set_ylim(-15, 85)
     axes_ts_list[axes_dex][row_dex][col_dex].set_xlabel("Time (s)")
     axes_ts_list[axes_dex][row_dex][col_dex].set_ylabel("Force (kN)")
+    axes_ts_list[axes_dex][row_dex][col_dex].text(0,60, filename)
     
 
     # Twinning frequency axis
-    ax2 = axes_ts_list[axes_dex][row_dex][col_dex].twinx()
-    ax2.plot(
-        data_files_dict[filename]["Time (s)"], 
-        data_files_dict[filename]["Adj Freq. (MHz)"],
-        color=(0.6, 0.2, 0.2, 0.5))
-    ax2.plot(
-        data_files_dict[filename]["Time (s)"], 
-        data_files_dict[filename]["Avg. Adj Freq. (MHz)"],
-        color=(0.6, 0.6, 0.2, 0.5))
-    ax2.text(0,-.02, filename)
-    ax2.set_ylim(-80, 10)
-    ax2.set_ylabel("Freq. Deviation (kHz)")
+    #ax2 = axes_ts_list[axes_dex][row_dex][col_dex].twinx()
+    #ax2.plot(
+    #    data_files_dict[filename]["Time (s)"], 
+    #    data_files_dict[filename]["Avg. Adj Freq. A (MHz)"], ls='--')
+    #ax2.plot(
+    #    data_files_dict[filename]["Time (s)"], 
+    #    data_files_dict[filename]["Avg. Adj Freq. B (MHz)"], ls='--')
+    #ax2.plot(
+    #    data_files_dict[filename]["Time (s)"], 
+    #    data_files_dict[filename]["Avg. Adj Freq. C (MHz)"], ls='--')
+    #ax2.plot(
+    #    data_files_dict[filename]["Time (s)"], 
+    #    data_files_dict[filename]["Avg. Adj Freq. D (MHz)"], ls='--')
+    #ax2.set_ylim(-30, 170)
+    #ax2.set_ylabel("Freq. Deviation (kHz)")
 #
 plt.show(block=False)
 
