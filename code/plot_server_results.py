@@ -12,7 +12,8 @@ import pdb
 
 mypath = "../data/server_results/"
 # List comprehension with nested fors to unpack walk() yielding its outputs
-filelist = [filename for (dirpath, dirnames, filenames) in walk(mypath) for filename in filenames]
+filelist = [filename for (dirpath, dirnames, filenames) in walk(mypath) if dirpath == mypath
+              for filename in filenames]
 
 print(filelist)
 
@@ -45,8 +46,11 @@ label_model_dict = {
 
 label_n_list_dict = {key: [] for key in label_model_dict.keys()}
 
+n_vals = list(pd.unique(super_data_frame["input data window length"]))
+print(f"found n vals: {n_vals}")
+
 for key, value in label_model_dict.items():
-  for n in range(1,6):
+  for n in n_vals:
     label_n_list_dict[key].append(
         super_data_frame[
           (super_data_frame["lp"] == value[0]) &
@@ -85,14 +89,30 @@ label_color_dict = {
     "Linear FFNN": "darkgreen",
     "Poly FFNN": "magenta"}
 
+label_offset_dict = {
+    "Linear Regression": 0.0,
+    "Poly Regression": 0.15,
+    "Linear FFNN": 0.30,
+    "Poly FFNN": 0.45}
+
 for name, data_list in label_n_list_dict.items():
-    x_vals = [1,2,3,4,5]
-    for scaling in scalings:
+    x_vals = n_vals
+    for scaledex, scaling in enumerate(scalings):
+      r2_dists = []
       r2_vals = []
       r2_stds = []
       mse_vals = []
       mse_stds = []
       for frame in data_list:
+        r2_dist = []
+        for index in range(int(frame[frame["ds"] == scaling]["num_cross_val"])):
+          r2_dist.append(frame[frame["ds"] == scaling][f"r2 {index}"])
+        r2_dists.append(r2_dist)
+
+        mse_dist = []
+        for index in range(int(frame[frame["ds"] == scaling]["num_cross_val"])):
+          mse_dist.append(frame[frame["ds"] == scaling][f"mse {index}"])
+
         r2_vals.append(
             float(frame[frame["ds"] == scaling]["avg r2"]))
         r2_stds.append(
@@ -101,28 +121,38 @@ for name, data_list in label_n_list_dict.items():
             float(frame[frame["ds"] == scaling]["avg MSE"]))
         mse_stds.append(
             float(frame[frame["ds"] == scaling]["MSE std"]))
-      r2_lower = [a-b for a,b in zip(r2_vals, r2_stds)]
-      r2_upper = [a+b for a,b in zip(r2_vals, r2_stds)]
-      axs1.fill_between(x_vals, r2_lower, r2_upper,
-            color = label_color_dict[name], alpha = 0.2)
-      axs1.plot(x_vals, r2_vals, label=name + " " + scaling, 
-               ls='--', color=label_color_dict[name],
-               marker=scalings_marker_dict[scaling])
+
+      for xx, dist in zip(x_vals, r2_dists):
+        xx_vals = [xx + scaledex * 0.04 + label_offset_dict[name]] * len(dist)
+        muh_label = "_no_legend_"
+        if xx == x_vals[0]:
+            muh_label = name + " " + scaling 
+        axs1.scatter(xx_vals, dist, 
+              c=label_color_dict[name],
+              marker=scalings_marker_dict[scaling],
+              label=muh_label)
+      #r2_lower = [a-b for a,b in zip(r2_vals, r2_stds)]
+      #r2_upper = [a+b for a,b in zip(r2_vals, r2_stds)]
+      #axs1.fill_between(x_vals, r2_lower, r2_upper,
+      #      color = label_color_dict[name], alpha = 0.2)
+      #axs1.plot(x_vals, r2_vals, label=name + " " + scaling, 
+      #         ls='--', color=label_color_dict[name],
+      #         marker=scalings_marker_dict[scaling])
       
-      mse_lower = [a-b for a,b in zip(mse_vals, mse_stds)]
-      mse_upper = [a+b for a,b in zip(mse_vals, mse_stds)]
-      axs2.fill_between(x_vals, mse_lower, mse_upper,
-            color = label_color_dict[name], alpha = 0.2)
-      axs2.plot(x_vals, mse_vals, label=name + " " + scaling, 
-               ls='--', color=label_color_dict[name],
-               marker=scalings_marker_dict[scaling])
+      #mse_lower = [a-b for a,b in zip(mse_vals, mse_stds)]
+      #mse_upper = [a+b for a,b in zip(mse_vals, mse_stds)]
+      #axs2.fill_between(x_vals, mse_lower, mse_upper,
+      #      color = label_color_dict[name], alpha = 0.2)
+      #axs2.plot(x_vals, mse_vals, label=name + " " + scaling, 
+      #         ls='--', color=label_color_dict[name],
+      #         marker=scalings_marker_dict[scaling])
 
     axs1.set_ylim(0,1)
     axs1.legend()
     axs1.set_title("r2 values")
 
     axs2.set_title("MSE values")
-    axs2.legend()
+    #axs2.legend()
 
 plt.show(block=False)
 input("Press Enter to close...")

@@ -85,7 +85,7 @@ add_diffs = False
 ##
 # Window
 ##
-window_len = 4
+window_len = 1
 # Window x values to windows of len N
 # Flatten samples to [abcd abcd ...]
 # Window the xvals
@@ -166,6 +166,8 @@ for ppp in poly_preprocess:
         ("avg MSE", -scores["test_neg_mean_squared_error"].mean()),
         ("MSE std", scores["test_neg_mean_squared_error"].std()),
         ])
+      results_list[-1].extend([(f"r2 {idx}", score) for idx, score in enumerate(scores["test_r2"])])
+      results_list[-1].extend([(f"mse {idx}", -score) for idx, score in enumerate(scores['test_neg_mean_squared_error'])])
 
 print("Done.")
 
