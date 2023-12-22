@@ -12,6 +12,18 @@ from sklearn.metrics import mean_squared_error, r2_score
 
 import pdb
 
+SMALL_SIZE = 16
+MEDIUM_SIZE = 20
+BIGGER_SIZE = 20
+
+plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+plt.rc('axes', titlesize=SMALL_SIZE)     # fontsize of the axes title
+plt.rc('axes', labelsize=MEDIUM_SIZE)    # fontsize of the x and y labels
+plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
+
 # Load all good csv files as indicated by index.csv
 files_index = pd.read_csv("../data/coal_csvs/index.csv")
 
@@ -33,7 +45,7 @@ y2_vals = []
 for filename in good_files_list:
     
     # Compute avg force values
-    avg_len = 50
+    avg_len = 40
     data_files_dict[filename]["Avg. Force (kN)"] = \
         np.convolve(data_files_dict[filename]["Force (kN)"], 
           np.ones(avg_len), 'same') / avg_len
@@ -115,7 +127,7 @@ for filename in good_files_list:
 ##
 print("Fitting ffnn...")
 # Window the xvals
-nn_window_size = 4
+nn_window_size = 3
 nn_window_x_vals = []
 nn_window_y_vals = []
 for index in range(len(x_vals)-nn_window_size + 1):
@@ -128,7 +140,7 @@ nn_window_y_vals = np.array(nn_window_y_vals) # add inner dim
 
 
 ffnn = MLPRegressor((nn_window_size, nn_window_size, int(1 + nn_window_size/2)), activation='relu', solver='adam',
-          max_iter=400, verbose=False).fit(
+          max_iter=400, verbose=False, random_state=12345).fit(
     nn_window_x_vals, nn_window_y_vals)
 print("Done!")
 
@@ -156,19 +168,21 @@ for filename in good_files_list:
 
 # Plot bias adjusted traces
 num_plot_rows = 2
-num_plot_cols = 3
+num_plot_cols = 2
 fig1, axes1 = plt.subplots(num_plot_rows, num_plot_cols)
 fig2, axes2 = plt.subplots(num_plot_rows, num_plot_cols)
 fig3, axes3 = plt.subplots(num_plot_rows, num_plot_cols)
 fig4, axes4 = plt.subplots(num_plot_rows, num_plot_cols)
-axes_list = [axes1, axes2, axes3, axes4]
+fig5, axes5 = plt.subplots(num_plot_rows, num_plot_cols)
+axes_list = [axes1, axes2, axes3, axes4, axes5]
   
 # Plot time series data
 fig_ts1, axes_ts1 = plt.subplots(num_plot_rows, num_plot_cols)
 fig_ts2, axes_ts2 = plt.subplots(num_plot_rows, num_plot_cols)
 fig_ts3, axes_ts3 = plt.subplots(num_plot_rows, num_plot_cols)
 fig_ts4, axes_ts4 = plt.subplots(num_plot_rows, num_plot_cols)
-axes_ts_list = [axes_ts1, axes_ts2, axes_ts3, axes_ts4]
+fig_ts5, axes_ts5 = plt.subplots(num_plot_rows, num_plot_cols)
+axes_ts_list = [axes_ts1, axes_ts2, axes_ts3, axes_ts4, axes_ts5]
 
 # Plot row major
 for idx, filename in enumerate(good_files_list):
@@ -229,19 +243,21 @@ for idx, filename in enumerate(good_files_list):
     axes_ts_list[axes_dex][row_dex][col_dex].plot(
         data_files_dict[filename]["Time (s)"], 
         data_files_dict[filename]["Lin Est Force (kN)"],
-        color='red')
+        color='orange', label="Linear Reg. Est.")
     axes_ts_list[axes_dex][row_dex][col_dex].plot(
         data_files_dict[filename]["Time (s)"], 
         data_files_dict[filename]["Poly Fit Force (kN)"],
-        color='purple')
+        color='cyan', label="Poly Reg. Est.")
     axes_ts_list[axes_dex][row_dex][col_dex].plot(
         data_files_dict[filename]["Time (s)"], 
         data_files_dict[filename]["FFNN Fit Force (kN)"],
-        color='black')
+        color='forestgreen', label="Linear FFNN")
+    # TODO add poly ffnn with magenta
     axes_ts_list[axes_dex][row_dex][col_dex].set_ylim(-15, 85)
     axes_ts_list[axes_dex][row_dex][col_dex].set_xlabel("Time (s)")
     axes_ts_list[axes_dex][row_dex][col_dex].set_ylabel("Force (kN)")
-    axes_ts_list[axes_dex][row_dex][col_dex].text(0,60, filename)
+    axes_ts_list[axes_dex][row_dex][col_dex].text(1.00,70, filename)
+    axes_ts_list[axes_dex][row_dex][col_dex].legend(loc="center", bbox_to_anchor=(0.45, 0.5))
     
 
     # Twinning frequency axis
@@ -263,9 +279,5 @@ for idx, filename in enumerate(good_files_list):
 #
 plt.show(block=False)
 
+input("Press Enter to close")
 
-
-
-# Split data into test/train
-
-pdb.set_trace()
