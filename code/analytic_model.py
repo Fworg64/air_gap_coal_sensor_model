@@ -63,7 +63,7 @@ for filename in good_files_list:
       data_files_dict[filename][f"Avg. Adj {chan_name}"] = \
           np.convolve(data_files_dict[filename][f"Adj {chan_name}"],
             np.ones(avg_len), 'same') / avg_len
-      # TODO high pass filter
+      # TODO test high pass filter
 
     # Glob data into X and Y lists
     chan_vals = [data_files_dict[filename][f"Avg. Adj {chan_name}"].to_list() 
@@ -139,10 +139,9 @@ for index in range(len(x_vals)-nn_window_size + 1):
 nn_window_y_vals = np.array(nn_window_y_vals) # add inner dim
 
 
-ffnn = MLPRegressor((nn_window_size, nn_window_size, int(1 + nn_window_size/2)), activation='relu', solver='adam',
-          max_iter=400, verbose=False, random_state=12345).fit(
+ffnn = MLPRegressor((nn_window_size, nn_window_size), activation='relu', solver='adam',
+          max_iter=800, verbose=False, random_state=12345).fit(
     nn_window_x_vals, nn_window_y_vals)
-print("Done!")
 
 ffnn_y_hat = ffnn.predict(nn_window_x_vals)
 print("ffnn MSE: ")
@@ -164,6 +163,49 @@ for filename in good_files_list:
 
     data_files_dict[filename]["FFNN Fit Force (kN)"] = \
       ffnn.predict(windowed_vals)
+
+
+##
+# Poly FFNN fit
+##
+print("Fitting Poly FFNN...")
+# reuse nn_window_size and nn_window_y_vals
+poly_nn_x_vals = []
+for index in range(len(x_poly_vals) - nn_window_size + 1):
+    chanelled_vals = x_poly_vals[index:index+nn_window_size]
+    # Flatten X
+    poly_nn_x_vals.append([val for row in chanelled_vals for val in row])
+
+poly_ffnn = MLPRegressor((nn_window_size, nn_window_size), activation='relu', solver='adam',
+                max_iter=800, verbose=False, random_state=54321).fit(
+        poly_nn_x_vals, nn_window_y_vals)
+
+poly_ffnn_y_hat = poly_ffnn.predict(poly_nn_x_vals)
+
+print("poly ffnn MSE: ")
+print(mean_squared_error(nn_window_y_vals, poly_ffnn_y_hat))
+print("poly ffnn R2: ")
+print(r2_score(nn_window_y_vals, poly_ffnn_y_hat))
+
+## Add model data to data dict
+for filename in good_files_list:
+    # break file data into windows
+    chan_vals = [data_files_dict[filename][f"Avg. Adj {chan_name}"].to_list() 
+                  for chan_name in chan_names_list]
+    chan_time_list = [list(vals) 
+                      for vals in zip(*chan_vals)]
+    poly_chan_time_list = poly.fit_transform(chan_time_list)
+    windowed_vals = []
+    for index in range(len(chan_time_list) - nn_window_size +1):
+        chanelled_vals = poly_chan_time_list[index:index+nn_window_size]
+        windowed_vals.append([val for row in chanelled_vals for val in row]) # flatten
+    windowed_vals = [windowed_vals[0]] * (nn_window_size-1) + windowed_vals
+
+    data_files_dict[filename]["Poly FFNN Fit Force (kN)"] = \
+      poly_ffnn.predict(windowed_vals)
+
+print("Done!")
+
 
 
 # Plot bias adjusted traces
@@ -236,10 +278,12 @@ for idx, filename in enumerate(good_files_list):
     # plot time data
     axes_ts_list[axes_dex][row_dex][col_dex].plot(
         data_files_dict[filename]["Time (s)"], 
-        data_files_dict[filename]["Force (kN)"])
+        data_files_dict[filename]["Force (kN)"], 
+        color='lightsteelblue', label='Raw Force (kN)')
     axes_ts_list[axes_dex][row_dex][col_dex].plot(
         data_files_dict[filename]["Time (s)"], 
-        data_files_dict[filename]["Avg. Force (kN)"])
+        data_files_dict[filename]["Avg. Force (kN)"], 
+        color='black', label='Avg Force (kN)')
     axes_ts_list[axes_dex][row_dex][col_dex].plot(
         data_files_dict[filename]["Time (s)"], 
         data_files_dict[filename]["Lin Est Force (kN)"],
@@ -252,12 +296,16 @@ for idx, filename in enumerate(good_files_list):
         data_files_dict[filename]["Time (s)"], 
         data_files_dict[filename]["FFNN Fit Force (kN)"],
         color='forestgreen', label="Linear FFNN")
-    # TODO add poly ffnn with magenta
+    axes_ts_list[axes_dex][row_dex][col_dex].plot(
+        data_files_dict[filename]["Time (s)"], 
+        data_files_dict[filename]["Poly FFNN Fit Force (kN)"],
+        color='magenta', label="Poly FFNN")
     axes_ts_list[axes_dex][row_dex][col_dex].set_ylim(-15, 85)
     axes_ts_list[axes_dex][row_dex][col_dex].set_xlabel("Time (s)")
     axes_ts_list[axes_dex][row_dex][col_dex].set_ylabel("Force (kN)")
-    axes_ts_list[axes_dex][row_dex][col_dex].text(1.00,70, filename)
-    axes_ts_list[axes_dex][row_dex][col_dex].legend(loc="center", bbox_to_anchor=(0.45, 0.5))
+    #axes_ts_list[axes_dex][row_dex][col_dex].text(1.00,70, filename)
+    axes_ts_list[axes_dex][row_dex][col_dex].set_title(filename)
+    axes_ts_list[axes_dex][row_dex][col_dex].legend(loc="upper center", bbox_to_anchor=(0.45, 0.99))
     
 
     # Twinning frequency axis
