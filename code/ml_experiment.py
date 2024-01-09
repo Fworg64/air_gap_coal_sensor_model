@@ -28,23 +28,52 @@ import pdb
 ##
 
 # Use decimated values instead of moving average
-argument_use_decimated_vals = True
+argument_use_decimated_vals = 0
 
 # Use up to N consectutive samples for classification
 argument_window_len = 1
 
+# Don't Include NN regressions
+argument_no_nn = False
 
+# What percent of data to use for testing during test/train split
+argument_test_frac = 0.5
+
+# How many cross-validations to perform for Monte-Carlo performance distribution modelling
+argument_num_cross_vals = 3
+
+# How many cores to allow for computation
+argument_parallel_jobs = 3
 
 ## Allow command line overrides
-# Making command line argument for window shape
 parser = argparse.ArgumentParser()
-parser.add_argument("--decimated", default=argument_use_decimated_vals, type=bool,
-  help="Set to False to use moving average")
+
+parser.add_argument("--decimated", default=argument_use_decimated_vals, type=int,
+  help="Set to 1 or greater to use decimation")
+
 # Making command line argument for window duration
-parser.add_argument("--window_len", default=argument_window_len, type=float,
+parser.add_argument("--window_len", default=argument_window_len, type=int,
   help="Number of how many consecutive samples to give regressor")
 
+parser.add_argument("--no_nn", default=argument_no_nn, type=bool,
+  help="Set to True to omit NN from processing")
+
+parser.add_argument("--test_frac", default=argument_test_frac, type=float,
+  help="[0.0, 1.0) fraction to use for test during splits")
+
+parser.add_argument("--num_cross_vals", default=argument_num_cross_vals, type=int,
+  help="How many splits to run")
+
+parser.add_argument("--num_parallel_jobs", default=argument_parallel_jobs, type=int,
+  help="How many cores to use")
+
 args = parser.parse_args()
+
+my_test_size = args.test_frac
+number_cross_validations = args.num_cross_vals
+
+number_parallel_jobs = args.num_parallel_jobs
+
 
 
 # Load all good csv files as indicated by index.csv
@@ -67,13 +96,19 @@ this_time = time.time()
 chan_names_list = ["Freq. A (MHz)", "Freq. B (MHz)", "Freq. C (MHz)", "Freq. D (MHz)"]
 
 # Moving average size in number of samples    
-avg_len = 50
+avg_len = 100
 
 # Dictionary of dictionary of lists
 data_list_dict = {}
 # Preprocess data to have bias adjusted based on first 0.5s from sample
 x_vals = []
 y_vals = []
+
+decimation_factor = 2
+if args.decimated > 0:
+  decimation_factor = args.decimated
+  print(f"Decimating by factor of {decimation_factor}")
+
 for filename in good_files_list:
     
     # Compute avg force values
@@ -87,7 +122,7 @@ for filename in good_files_list:
     # Compute decimated force values
     data_list_dict[filename]["Decimated Force (kN)"] = \
         decimate(data_files_dict[filename]["Force (kN)"],
-          q=5, n=80, ftype='fir', axis=0, zero_phase=True)
+          q=decimation_factor, n=4, ftype='fir', axis=0, zero_phase=True)
     
     # Compute bias compensated avg values
     for chan_name in chan_names_list:
@@ -108,11 +143,11 @@ for filename in good_files_list:
       # Add decimated values
       data_list_dict[filename][f"Decimated {chan_name}"] = \
           decimate(data_files_dict[filename][f"Adj {chan_name}"],
-                   q=5, n=80, ftype='fir', axis=0, zero_phase=True)
+                   q=decimation_factor, n=4, ftype='fir', axis=0, zero_phase=True)
 
     chan_key = "Avg. Adj"
     force_key = "Avg."
-    if (args.decimated):
+    if (args.decimated > 0):
         chan_key = "Decimated"
         force_key = "Decimated"
 
@@ -122,11 +157,6 @@ for filename in good_files_list:
     chan_time_list = [list(vals) for vals in zip(*chan_vals)] # transpose to each channel as column
     x_vals.extend(chan_time_list) # each entry is all 4 channels at same time
     y_vals.extend(data_list_dict[filename][f"{force_key} Force (kN)"])
-
-number_parallel_jobs = 5
-
-number_cross_validations = 3
-my_test_size = 0.5
 
 
 # Add first order difference to sample
@@ -187,9 +217,9 @@ scorings = ['r2','neg_root_mean_squared_error', 'neg_mean_absolute_error']
 
 # Scale data for numerical performance
 data_scalings = [
-        ("StandardScaler", StandardScaler()),
+       	("ScaleControl", None),
         ("RangeScaler", StandardScaler(with_mean=False)),
-       	("ScaleControl", None)]
+        ("StandardScaler", StandardScaler())]
 
 # Classifiers dictionary list 
 classifiers = {
@@ -201,16 +231,17 @@ classifiers = {
         ("Poly MAE Fit", linear_model.SGDRegressor(loss='epsilon_insensitive', penalty=None, epsilon=0.0))]}
 
 # Extend with NNs
-for width in [1,2,3,5,10]:
-  for depth in [1,2,3,5,10]:
-    classifiers["Linear"].append((f"Linear NN (ReLU) ({linear_input_dim*width},) * {depth}",
-        MLPRegressor((linear_input_dim*width, ) * depth, 
-             activation='relu', solver='adam',
-             max_iter=800, verbose=False)))
-    classifiers["Poly"].append((f"Poly NN (ReLU) ({poly_input_dim*width},) * {depth}",
-        MLPRegressor((poly_input_dim*width, ) * depth, 
-             activation='relu', solver='adam',
-             max_iter=800, verbose=False)))
+if (not args.no_nn):
+  for width in [1,2,3,5,10]:
+    for depth in [1,2,3,5,10]:
+      classifiers["Linear"].append((f"Linear NN (ReLU) ({linear_input_dim*width},) * {depth}",
+          MLPRegressor((linear_input_dim*width, ) * depth, 
+               activation='relu', solver='adam',
+               max_iter=800, verbose=False)))
+      classifiers["Poly"].append((f"Poly NN (ReLU) ({poly_input_dim*width},) * {depth}",
+          MLPRegressor((poly_input_dim*width, ) * depth, 
+               activation='relu', solver='adam',
+               max_iter=800, verbose=False)))
 
 results_list = []
 for xdata in [("Linear", nn_window_x_vals), ("Poly", nn_window_poly_x_vals)]:
@@ -238,6 +269,7 @@ for xdata in [("Linear", nn_window_x_vals), ("Poly", nn_window_poly_x_vals)]:
         ("num_cross_val", number_cross_validations),
         ("test_fraction", my_test_size),
         ("running avg sample length", avg_len),
+        ("decimated", args.decimated),
         ("input data window length", window_len),
         ("diffs added", add_diffs),
         ("lp", xdata[0]),
