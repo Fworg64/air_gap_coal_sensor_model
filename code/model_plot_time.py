@@ -314,6 +314,15 @@ bc, ac = signal.butter(N=10, btype="low", Wn=10, fs=sample_freq)
 ffnn_y_hat_bar = \
   signal.filtfilt(bc, ac, ffnn_y_hat)
 
+bz, az = signal.butter(N=10, btype="high", Wn=8, fs=sample_freq)
+ffnn_y_boost = \
+  signal.filtfilt(bz, az, ffnn_y_hat_bar)
+
+pdb.set_trace()
+
+# Add boosted content
+ffnn_y_boost = ffnn_y_boost + ffnn_y_hat_bar
+
 print("ffnn MSE: ")
 print(mean_squared_error(nn_window_y_vals, ffnn_y_hat))
 print("ffnn R2: ")
@@ -323,6 +332,11 @@ print("filt ffnn MSE: ")
 print(mean_squared_error(nn_window_y_vals, ffnn_y_hat_bar))
 print("filt ffnn R2: ")
 print(r2_score(nn_window_y_vals, ffnn_y_hat_bar))
+
+print("boost filt ffnn MSE: ")
+print(mean_squared_error(nn_window_y_vals, ffnn_y_boost))
+print("boost filt ffnn R2: ")
+print(r2_score(nn_window_y_vals, ffnn_y_boost))
 
 ## Add model data to data dict
 for filename in good_files_list:
@@ -340,6 +354,9 @@ for filename in good_files_list:
       ffnn.predict(windowed_vals)
     data_files_dict[filename]["Filt FFNN Fit Force (kN)"] = \
       signal.filtfilt(bc, ac, data_files_dict[filename]["FFNN Fit Force (kN)"])
+    data_files_dict[filename]["Boost Filt FFNN Fit Force (kN)"] = \
+      data_files_dict[filename]["Filt FFNN Fit Force (kN)"] + \
+      signal.filtfilt(bz, az, data_files_dict[filename]["Filt FFNN Fit Force (kN)"])
 
 
 ##
@@ -442,6 +459,10 @@ for idx, filename in enumerate(good_files_list):
         data_files_dict[filename]["Avg. Force (kN)"], 
         data_files_dict[filename]["FFNN Fit Force (kN)"], c='black',
         marker='D', s=3, label='Neural Net')
+    twin_force_axis.scatter(
+        data_files_dict[filename]["Avg. Force (kN)"], 
+        data_files_dict[filename]["Boost Filt FFNN Fit Force (kN)"], c='yellow',
+        marker='D', s=3, label='Neural Net')
     twin_force_axis.set_ylabel("Estimated Force")
     twin_force_axis.set_ylim(-5,50)
 
@@ -483,6 +504,10 @@ for idx, filename in enumerate(good_files_list):
         data_files_dict[filename]["Time (s)"], 
         data_files_dict[filename]["Filt FFNN Fit Force (kN)"],
         color='purple', label="Filt Linear FFNN")
+    axes_ts_list[axes_dex][row_dex][col_dex].plot(
+        data_files_dict[filename]["Time (s)"], 
+        data_files_dict[filename]["Boost Filt FFNN Fit Force (kN)"],
+        color='yellow', label="Boost Filt Linear FFNN")
     #axes_ts_list[axes_dex][row_dex][col_dex].plot(
     #    data_files_dict[filename]["Time (s)"], 
     #    data_files_dict[filename]["Poly FFNN Fit Force (kN)"],
