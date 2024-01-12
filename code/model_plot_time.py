@@ -310,6 +310,41 @@ ffnn = MLPRegressor(
 
 ffnn_y_hat = ffnn.predict(nn_window_x_vals)
 
+##
+# Numerically estimate transfer function via cross-spectral density and psd
+# Hbar = Pyx / Pxx; 
+# Estimate linear system between output of ffnn and chosen regression target
+##
+
+pdb.set_trace()
+csd_freqs, Pyx = signal.csd(nn_window_y_vals, ffnn_y_hat, fs=sample_freq)
+psd_freqs, Pxx = signal.welch(ffnn_y_hat, fs=sample_freq)
+
+Hbar = np.divide(np.real(Pyx), Pxx)
+
+fig0, axes0 = plt.subplots(2, 2)
+
+axes0[0,0].plot(csd_freqs, np.real(Pyx))
+axes0[0,0].plot(csd_freqs, np.imag(Pyx))
+axes0[0,0].set_title("Pyx")
+axes0[0,0].set_yscale("log")
+axes0[0,1].plot(psd_freqs, Pxx)
+axes0[0,1].set_title("Pxx")
+axes0[0,1].set_yscale("log")
+axes0[1,0].plot(psd_freqs, np.real(Hbar))
+axes0[1,0].plot(psd_freqs, np.imag(Hbar))
+axes0[1,0].set_title("Hbar real and imag")
+axes0[1,0].set_yscale("log")
+axes0[1,1].plot(psd_freqs, np.abs(Hbar))
+axes0[1,1].plot(psd_freqs, np.angle(Hbar))
+axes0[1,1].set_title("Hbar abs and phase")
+axes0[1,1].set_yscale("log")
+
+plt.show()
+
+##
+# Fit low pass filter to fit variance
+##
 bc, ac = signal.butter(N=10, btype="low", Wn=10, fs=sample_freq)
 ffnn_y_hat_bar = \
   signal.filtfilt(bc, ac, ffnn_y_hat)
