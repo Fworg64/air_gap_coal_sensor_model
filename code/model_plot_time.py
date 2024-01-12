@@ -340,8 +340,6 @@ axes0[1,1].plot(psd_freqs, np.angle(Hbar))
 axes0[1,1].set_title("Hbar abs and phase")
 axes0[1,1].set_yscale("log")
 
-plt.show()
-
 ##
 # Fit low pass filter to fit variance
 ##
@@ -349,14 +347,11 @@ bc, ac = signal.butter(N=10, btype="low", Wn=10, fs=sample_freq)
 ffnn_y_hat_bar = \
   signal.filtfilt(bc, ac, ffnn_y_hat)
 
-bz, az = signal.butter(N=10, btype="high", Wn=8, fs=sample_freq)
+bz, az = signal.butter(N=10, btype="bandstop", Wn=[20, 50], fs=sample_freq)
 ffnn_y_boost = \
-  signal.filtfilt(bz, az, ffnn_y_hat_bar)
+  signal.filtfilt(bz, az, ffnn_y_hat)
 
 pdb.set_trace()
-
-# Add boosted content
-ffnn_y_boost = ffnn_y_boost + ffnn_y_hat_bar
 
 print("ffnn MSE: ")
 print(mean_squared_error(nn_window_y_vals, ffnn_y_hat))
@@ -390,8 +385,7 @@ for filename in good_files_list:
     data_files_dict[filename]["Filt FFNN Fit Force (kN)"] = \
       signal.filtfilt(bc, ac, data_files_dict[filename]["FFNN Fit Force (kN)"])
     data_files_dict[filename]["Boost Filt FFNN Fit Force (kN)"] = \
-      data_files_dict[filename]["Filt FFNN Fit Force (kN)"] + \
-      signal.filtfilt(bz, az, data_files_dict[filename]["Filt FFNN Fit Force (kN)"])
+      signal.filtfilt(bz, az, data_files_dict[filename]["FFNN Fit Force (kN)"])
 
 
 ##
