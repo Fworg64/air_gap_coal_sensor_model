@@ -383,30 +383,32 @@ for idx, filename in enumerate(good_files_list):
     axes_list[axes_dex][row_dex][col_dex].set_xlim(-5, 50)
 
     # plot time data
+    # Raw force from lcm (noisy)
     axes_ts_list[axes_dex][row_dex][col_dex].plot(
         data_files_dict[filename]["Time (s)"], 
         data_files_dict[filename]["Force (kN)"], 
         color='lightsteelblue', label='Raw Force (kN)')
     axes_ts_list[axes_dex][row_dex][col_dex].plot(
         data_files_dict[filename]["Time (s)"], 
-        data_list_dict[filename][f"{force_key} Force (kN)"], 
-        color='magenta', label=force_key)
-    axes_ts_list[axes_dex][row_dex][col_dex].plot(
-        data_files_dict[filename]["Time (s)"], 
         data_files_dict[filename]["Lin Est Force (kN)"],
-        color='orange', label="Linear Reg. Est.")
+        color='#9E68C0', label="Linear Reg. Est.")
     axes_ts_list[axes_dex][row_dex][col_dex].plot(
         data_files_dict[filename]["Time (s)"], 
         data_files_dict[filename]["Poly Fit Force (kN)"],
-        color='cyan', label="Poly Reg. Est.")
+        color='#4883D6', label="Poly Reg. Est.")
     axes_ts_list[axes_dex][row_dex][col_dex].plot(
         data_files_dict[filename]["Time (s)"], 
         data_files_dict[filename]["FFNN Fit Force (kN)"],
-        color='forestgreen', label="Linear FFNN")
+        color='#78BFE0', label="Linear FFNN")
     axes_ts_list[axes_dex][row_dex][col_dex].plot(
         data_files_dict[filename]["Time (s)"], 
         data_files_dict[filename]["Poly FFNN Fit Force (kN)"],
-        color='yellow', label="Poly FFNN")
+        color='#7ACBA1', label="Poly FFNN")
+    # Filtered force from LCM strain gauges, regression target
+    axes_ts_list[axes_dex][row_dex][col_dex].plot(
+        data_files_dict[filename]["Time (s)"], 
+        data_list_dict[filename][f"{force_key} Force (kN)"], 
+        color='magenta', label=force_key)
     #axes_ts_list[axes_dex][row_dex][col_dex].plot(
     #    data_files_dict[filename]["Time (s)"], 
     #    data_files_dict[filename]["Poly FFNN Fit Force (kN)"],
