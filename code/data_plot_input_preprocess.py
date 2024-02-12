@@ -184,6 +184,8 @@ y_hats = reg.predict(x_vals)
 
 print("lin MSE: ")
 print(mean_squared_error(y_vals, y_hats))
+print("lin MAE: ")
+print(mean_absolute_error(y_vals, y_hats))
 print("lin R2: ")
 print(r2_score(y_vals, y_hats))
 
@@ -206,6 +208,8 @@ y_poly_hats = poly_reg_model.predict(poly_x_vals)
 print(f"Poly coef: {poly_reg_model.coef_}, Intercept: {poly_reg_model.intercept_}")
 print("poly MSE: ")
 print(mean_squared_error(y_vals, y_poly_hats))
+print("poly MAE: ")
+print(mean_absolute_error(y_vals, y_poly_hats))
 print("poly R2: ")
 print(r2_score(y_vals, y_poly_hats))
 
@@ -264,6 +268,8 @@ axes0[1,1].set_yscale("log")
 
 print("ffnn MSE: ")
 print(mean_squared_error(y_vals, ffnn_y_hat))
+print("ffnn MAE: ")
+print(mean_absolute_error(y_vals, ffnn_y_hat))
 print("ffnn R2: ")
 print(r2_score(y_vals, ffnn_y_hat))
 
@@ -291,6 +297,8 @@ poly_ffnn_y_hat = poly_ffnn.predict(poly_x_vals)
 
 print("poly ffnn MSE: ")
 print(mean_squared_error(y_vals, poly_ffnn_y_hat))
+print("poly ffnn MAE: ")
+print(mean_absolute_error(y_vals, poly_ffnn_y_hat))
 print("poly ffnn R2: ")
 print(r2_score(y_vals, poly_ffnn_y_hat))
 
@@ -384,31 +392,32 @@ for idx, filename in enumerate(good_files_list):
 
     # plot time data
     # Raw force from lcm (noisy)
-    axes_ts_list[axes_dex][row_dex][col_dex].plot(
+    rawforce, = axes_ts_list[axes_dex][row_dex][col_dex].plot(
         data_files_dict[filename]["Time (s)"], 
         data_files_dict[filename]["Force (kN)"], 
-        color='lightsteelblue', label='Raw Force (kN)')
-    axes_ts_list[axes_dex][row_dex][col_dex].plot(
+        color='lightsteelblue', label='Force Data')
+    # Sensor measurement regressions
+    s1p, = axes_ts_list[axes_dex][row_dex][col_dex].plot(
         data_files_dict[filename]["Time (s)"], 
         data_files_dict[filename]["Lin Est Force (kN)"],
-        color='#9E68C0', label="Linear Reg. Est.")
-    axes_ts_list[axes_dex][row_dex][col_dex].plot(
+        color='#9E68C0', label="Lin. Reg.")
+    s2p, = axes_ts_list[axes_dex][row_dex][col_dex].plot(
         data_files_dict[filename]["Time (s)"], 
         data_files_dict[filename]["Poly Fit Force (kN)"],
-        color='#4883D6', label="Poly Reg. Est.")
-    axes_ts_list[axes_dex][row_dex][col_dex].plot(
+        color='#4883D6', label="Poly. Reg.")
+    s3p, = axes_ts_list[axes_dex][row_dex][col_dex].plot(
         data_files_dict[filename]["Time (s)"], 
         data_files_dict[filename]["FFNN Fit Force (kN)"],
-        color='#78BFE0', label="Linear FFNN")
-    axes_ts_list[axes_dex][row_dex][col_dex].plot(
+        color='#78BFE0', label="Lin. FFNN")
+    s4p, = axes_ts_list[axes_dex][row_dex][col_dex].plot(
         data_files_dict[filename]["Time (s)"], 
         data_files_dict[filename]["Poly FFNN Fit Force (kN)"],
-        color='#7ACBA1', label="Poly FFNN")
+        color='#3EA06D', label="Poly. FFNN")
     # Filtered force from LCM strain gauges, regression target
-    axes_ts_list[axes_dex][row_dex][col_dex].plot(
+    filtforce, = axes_ts_list[axes_dex][row_dex][col_dex].plot(
         data_files_dict[filename]["Time (s)"], 
         data_list_dict[filename][f"{force_key} Force (kN)"], 
-        color='magenta', label=force_key)
+        color='magenta', label="Filt. <10Hz")#label=force_key)
     #axes_ts_list[axes_dex][row_dex][col_dex].plot(
     #    data_files_dict[filename]["Time (s)"], 
     #    data_files_dict[filename]["Poly FFNN Fit Force (kN)"],
@@ -418,7 +427,10 @@ for idx, filename in enumerate(good_files_list):
     axes_ts_list[axes_dex][row_dex][col_dex].set_ylabel("Force (kN)")
     #axes_ts_list[axes_dex][row_dex][col_dex].text(1.00,70, filename)
     axes_ts_list[axes_dex][row_dex][col_dex].set_title(filename)
-    axes_ts_list[axes_dex][row_dex][col_dex].legend(loc="upper center", bbox_to_anchor=(0.45, 0.99))
+    leg1 = axes_ts_list[axes_dex][row_dex][col_dex].legend(handles=[s1p, s2p, s3p, s4p], loc="upper center", title="Cap. Sensor")
+    axes_ts_list[axes_dex][row_dex][col_dex].add_artist(leg1)
+    axes_ts_list[axes_dex][row_dex][col_dex].legend(handles=[rawforce, filtforce], loc="upper right", title="Strain Gauges")
+
     
 
     # Twinning frequency axis
