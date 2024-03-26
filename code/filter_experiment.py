@@ -31,13 +31,13 @@ import pdb
 argument_no_nn = False
 
 # What percent of data to use for testing during test/train split
-argument_test_frac = 0.5
+argument_test_frac = 0.7
 
 # How many cross-validations to perform for Monte-Carlo performance distribution modelling
-argument_num_cross_vals = 3
+argument_num_cross_vals = 100
 
 # How many cores to allow for computation
-argument_parallel_jobs = 3
+argument_parallel_jobs = 9
 
 ## Allow command line overrides
 parser = argparse.ArgumentParser()
@@ -226,11 +226,11 @@ if (not args.no_nn):
       classifiers["Linear"].append((f"Linear NN (ReLU) ({linear_input_dim*width},) * {depth}",
           MLPRegressor((linear_input_dim*width, ) * depth, 
                activation='relu', solver='adam',
-               max_iter=800, verbose=False)))
+               max_iter=1600, verbose=False)))
       classifiers["Poly"].append((f"Poly NN (ReLU) ({poly_input_dim*width},) * {depth}",
           MLPRegressor((poly_input_dim*width, ) * depth, 
                activation='relu', solver='adam',
-               max_iter=800, verbose=False)))
+               max_iter=1600, verbose=False)))
 
 results_list = []
 for name, x_vals in x_dict.items():
@@ -263,7 +263,7 @@ for name, x_vals in x_dict.items():
         ("filter options", name),
         ("lp", polly_or_not[0]),
         ("ds", my_pipeline.steps[0]),
-        ("cl", my_pipeline.steps[1]),
+        ("cl", my_pipeline.steps[2]),
         ("avg r2", scores["test_r2"].mean()),
         ("r2 std", scores["test_r2"].std()),
         ("avg RMSE", -scores["test_neg_root_mean_squared_error"].mean()),
@@ -299,7 +299,7 @@ print(results_frame)
 ## Write file with timestring
 os.makedirs('./out', exist_ok=True)
 timestr = time.strftime("%Y%m%d_%H%M%Sresults.csv")
-outfilename = './out/' + "COAL_2023_" + timestr
+outfilename = './out/' + "COAL_2024_" + timestr
 results_frame.to_csv(outfilename, index_label=False, index=False) 
 
 print(f"Have a nice day!    file wrote to: {outfilename}")
