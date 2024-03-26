@@ -96,10 +96,11 @@ y_filt_b, y_filt_a = signal.butter(N=10, btype="low", Wn=10.0, fs=sample_freq)
 xin_bs_b, xin_bs_a = signal.butter(N=10, btype="bandstop", Wn=[20,50], fs=sample_freq)
 
 # Filter inputs with LPF or MA,
-xin_lpf_freqs = [100, 50, 20, 10]
+xin_lpf_freqs = [100, 50, 20, 10, 5, 2, 1]
 ma_lens = [40, 20, 10, 5]
 
-input_filter_array = [('bandstop', 'control'), ('lowpass', 'moving avg', 'control')]
+#input_filter_array = [('bandstop', 'control'), ('lowpass', 'moving avg', 'control')]
+input_filter_array = [('control',), ('lowpass', 'control')]
 
 filtered_file_data_list = []
 
@@ -220,8 +221,8 @@ classifiers = {
 
 # Extend with NNs
 if (not args.no_nn):
-  for width in [1,2,3,4,5]:
-    for depth in [1,2,3,4,5]:
+  for width in [1]:
+    for depth in [3]:
       classifiers["Linear"].append((f"Linear NN (ReLU) ({linear_input_dim*width},) * {depth}",
           MLPRegressor((linear_input_dim*width, ) * depth, 
                activation='relu', solver='adam',
@@ -241,7 +242,7 @@ for name, x_vals in x_dict.items():
 
       scale = data_scalings[0] # standard is best for scaling
 
-      my_pipeline = Pipeline([scale, classy])
+      my_pipeline = Pipeline([scale, polly_or_not, classy])
 
       print(name)
       print(my_pipeline)

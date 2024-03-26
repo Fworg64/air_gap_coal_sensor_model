@@ -29,9 +29,9 @@ import pdb
 ##
 # Set Figures
 ##
-SMALL_SIZE = 20
-MEDIUM_SIZE = 24
-SMALLER_SIZE = 16
+SMALL_SIZE = 18
+MEDIUM_SIZE = 26
+SMALLER_SIZE = 18
 
 plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
 plt.rc('axes', titlesize=MEDIUM_SIZE)     # fontsize of the axes title
@@ -330,11 +330,11 @@ fig5, axes5 = plt.subplots(num_plot_rows, num_plot_cols)
 axes_list = [axes1, axes2, axes3, axes4, axes5]
   
 # Plot time series data
-fig_ts1, axes_ts1 = plt.subplots(num_plot_rows, num_plot_cols)
-fig_ts2, axes_ts2 = plt.subplots(num_plot_rows, num_plot_cols)
-fig_ts3, axes_ts3 = plt.subplots(num_plot_rows, num_plot_cols)
-fig_ts4, axes_ts4 = plt.subplots(num_plot_rows, num_plot_cols)
-fig_ts5, axes_ts5 = plt.subplots(num_plot_rows, num_plot_cols)
+fig_ts1, axes_ts1 = plt.subplots(num_plot_rows, num_plot_cols, sharex=True, sharey=True)
+fig_ts2, axes_ts2 = plt.subplots(num_plot_rows, num_plot_cols, sharex=True, sharey=True)
+fig_ts3, axes_ts3 = plt.subplots(num_plot_rows, num_plot_cols, sharex=True, sharey=True)
+fig_ts4, axes_ts4 = plt.subplots(num_plot_rows, num_plot_cols, sharex=True, sharey=True)
+fig_ts5, axes_ts5 = plt.subplots(num_plot_rows, num_plot_cols, sharex=True, sharey=True)
 axes_ts_list = [axes_ts1, axes_ts2, axes_ts3, axes_ts4, axes_ts5]
 
 # Plot row major
@@ -422,14 +422,20 @@ for idx, filename in enumerate(good_files_list):
     #    data_files_dict[filename]["Time (s)"], 
     #    data_files_dict[filename]["Poly FFNN Fit Force (kN)"],
     #    color='magenta', label="Poly FFNN")
-    axes_ts_list[axes_dex][row_dex][col_dex].set_ylim(-15, 85)
-    axes_ts_list[axes_dex][row_dex][col_dex].set_xlabel("Time (s)")
-    axes_ts_list[axes_dex][row_dex][col_dex].set_ylabel("Force (kN)")
+    axes_ts_list[axes_dex][row_dex][col_dex].set_ylim(-10, 65)
+    if row_dex == 1:
+      axes_ts_list[axes_dex][row_dex][col_dex].set_xlabel("Time (s)")
+    if col_dex == 0:
+      axes_ts_list[axes_dex][row_dex][col_dex].set_ylabel("Force (kN)")
     #axes_ts_list[axes_dex][row_dex][col_dex].text(1.00,70, filename)
     axes_ts_list[axes_dex][row_dex][col_dex].set_title(filename)
     leg1 = axes_ts_list[axes_dex][row_dex][col_dex].legend(handles=[s1p, s2p, s3p, s4p], loc="upper center", title="Cap. Sensor")
     axes_ts_list[axes_dex][row_dex][col_dex].add_artist(leg1)
     axes_ts_list[axes_dex][row_dex][col_dex].legend(handles=[rawforce, filtforce], loc="upper right", title="Strain Gauges")
+    axes_ts_list[axes_dex][row_dex][col_dex].grid(True, which="minor", axis="both")
+    axes_ts_list[axes_dex][row_dex][col_dex].minorticks_on()
+    axes_ts_list[axes_dex][row_dex][col_dex].tick_params(which="minor", bottom=False, left=False)
+    axes_ts_list[axes_dex][row_dex][col_dex].grid(True, which="major", axis="both", linewidth=1, color='k')
 
     
 
