@@ -327,7 +327,8 @@ fig2, axes2 = plt.subplots(num_plot_rows, num_plot_cols)
 fig3, axes3 = plt.subplots(num_plot_rows, num_plot_cols)
 fig4, axes4 = plt.subplots(num_plot_rows, num_plot_cols)
 fig5, axes5 = plt.subplots(num_plot_rows, num_plot_cols)
-axes_list = [axes1, axes2, axes3, axes4, axes5]
+fig6, axes6 = plt.subplots(num_plot_rows, num_plot_cols)
+axes_list = [axes1, axes2, axes3, axes4, axes5, axes6]
   
 # Plot time series data
 fig_ts1, axes_ts1 = plt.subplots(num_plot_rows, num_plot_cols, sharex=True, sharey=True)
@@ -335,7 +336,8 @@ fig_ts2, axes_ts2 = plt.subplots(num_plot_rows, num_plot_cols, sharex=True, shar
 fig_ts3, axes_ts3 = plt.subplots(num_plot_rows, num_plot_cols, sharex=True, sharey=True)
 fig_ts4, axes_ts4 = plt.subplots(num_plot_rows, num_plot_cols, sharex=True, sharey=True)
 fig_ts5, axes_ts5 = plt.subplots(num_plot_rows, num_plot_cols, sharex=True, sharey=True)
-axes_ts_list = [axes_ts1, axes_ts2, axes_ts3, axes_ts4, axes_ts5]
+fig_ts6, axes_ts6 = plt.subplots(num_plot_rows, num_plot_cols, sharex=True, sharey=True)
+axes_ts_list = [axes_ts1, axes_ts2, axes_ts3, axes_ts4, axes_ts5, axes_ts6]
 
 # Plot row major
 for idx, filename in enumerate(good_files_list):

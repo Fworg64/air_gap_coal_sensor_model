@@ -25,14 +25,14 @@ plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
 # Load experiment file 
 mypath = "./out/"
-filename = "COAL_2024_20240326_113603results.csv"
+filename = "COAL_2024_20240326_150438results.csv"
 
 data_frame = pd.read_csv(mypath + filename) 
                
 model_names_list = ["('Linear MSE Fit', LinearRegression())",
                     "('Poly MSE Fit', LinearRegression())",
-                    "('Linear NN (ReLU) (4,) * 3', MLPRegressor(hidden_layer_sizes=(4, 4, 4), max_iter=800))",
-                    "('Poly NN (ReLU) (14,) * 3', MLPRegressor(hidden_layer_sizes=(14, 14, 14), max_iter=800))"]
+                    "('Linear NN (ReLU) (4,) * 3', MLPRegressor(hidden_layer_sizes=(4, 4, 4), max_iter=1600))",
+                    "('Poly NN (ReLU) (14,) * 3', MLPRegressor(hidden_layer_sizes=(14, 14, 14), max_iter=1600))"]
 
 filter_names_list = [
     "control and control", 
