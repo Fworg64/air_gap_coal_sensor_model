@@ -25,7 +25,7 @@ plt.rc('figure', titlesize=BIGGER_SIZE)  # fontsize of the figure title
 
 # Load experiment file 
 mypath = "./out/"
-filename = "COAL_2024_20240326_150438results.csv"
+filename = "COAL_2024_20240402_210633results.csv"
 
 data_frame = pd.read_csv(mypath + filename) 
                
