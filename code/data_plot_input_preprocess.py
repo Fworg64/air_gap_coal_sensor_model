@@ -397,12 +397,12 @@ for idx, filename in enumerate(good_files_list):
     rawforce, = axes_ts_list[axes_dex][row_dex][col_dex].plot(
         data_files_dict[filename]["Time (s)"], 
         data_files_dict[filename]["Force (kN)"], 
-        color='lightsteelblue', label='Force Data')
+        color='dimgrey', label='Force Data')
     # Sensor measurement regressions
     s1p, = axes_ts_list[axes_dex][row_dex][col_dex].plot(
         data_files_dict[filename]["Time (s)"], 
         data_files_dict[filename]["Lin Est Force (kN)"],
-        color='#9E68C0', label="Lin. Reg.")
+        color='#7E58A0', label="Lin. Reg.")
     s2p, = axes_ts_list[axes_dex][row_dex][col_dex].plot(
         data_files_dict[filename]["Time (s)"], 
         data_files_dict[filename]["Poly Fit Force (kN)"],
