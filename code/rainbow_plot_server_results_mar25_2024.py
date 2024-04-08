@@ -63,6 +63,14 @@ method_shapes_sizes_dict = {model_names_list[0]: "9",
                      model_names_list[2]: "15",
                      model_names_list[3]: "15"}
 
+method_outline_sizes_dict = {model_names_list[0]: "14",
+                     model_names_list[1]: "20",
+                     model_names_list[2]: "20",
+                     model_names_list[3]: "24"}
+
+median_size = 2.4
+quartile_size = 4.8
+
 model_names_list.reverse()
 
 fig1, axs1 = plt.subplots()
@@ -111,19 +119,28 @@ for model_name in model_names_list:
     )
 
     dashes, = axs1.plot(xtickvals, r2_method_series_dict[model_name]["med"], 
-        label=model_name, color=method_colors_dict[model_name], linestyle='--', linewidth=1.8,
+        label=model_name, color='k',
+        linestyle='--', linewidth=median_size,
         zorder=10
     )
     
     q1dashes, = axs1.plot(xtickvals, r2_method_series_dict[model_name]["q1"], 
-        label=model_name, color='k',
-        linestyle=':', linewidth=1.8,
+        label=model_name, color=method_colors_dict[model_name],
+        linestyle=':', linewidth=quartile_size,
         zorder=10
     )
     q3dashes, = axs1.plot(xtickvals, r2_method_series_dict[model_name]["q3"], 
-        label=model_name, color='k',
-        linestyle=':', linewidth=1.8,
+        label=model_name, color=method_colors_dict[model_name],
+        linestyle=':', linewidth=quartile_size,
         zorder=10
+    )
+
+    outline, = axs1.plot(xtickvals, r2_method_series_dict[model_name]["med"], 
+        color='k',
+        marker=method_shapes_dict[model_name], 
+        markersize=method_outline_sizes_dict[model_name], 
+        linewidth=0,
+        zorder=20
     )
 
     dots, = axs1.plot(xtickvals, r2_method_series_dict[model_name]["med"], 
@@ -133,7 +150,7 @@ for model_name in model_names_list:
         linewidth=0,
         zorder=30
     )
-    r2_legend_artists.append((dashes, dots))
+    r2_legend_artists.append((dashes, outline, dots))
     r2_legend_labels.append(model_print_names[model_name])
 
 axs1.set_ylim(0.0,1)
@@ -162,20 +179,28 @@ for model_name in model_names_list:
     )
 
     dashes, = axs2.plot(xtickvals, mae_method_series_dict[model_name]["med"], 
-        label=model_name, color=method_colors_dict[model_name],  linestyle='--', linewidth=1.8,
+        label=model_name, color='k',
+        linestyle='--', linewidth=median_size,
         zorder=10
     )
     q1dashes, = axs2.plot(xtickvals, mae_method_series_dict[model_name]["q1"], 
-        label=model_name, color='k',
-        linestyle=':', linewidth=1.8,
+        label=model_name, color=method_colors_dict[model_name],  
+        linestyle=':', linewidth=quartile_size,
         zorder=10
     )
     q3dashes, = axs2.plot(xtickvals, mae_method_series_dict[model_name]["q3"], 
-        label=model_name, color='k',
-        linestyle=':', linewidth=1.8,
+        label=model_name, color=method_colors_dict[model_name],  
+        linestyle=':', linewidth=quartile_size,
         zorder=10
     )
 
+    outline, = axs2.plot(xtickvals, mae_method_series_dict[model_name]["med"], 
+        color='k',
+        marker=method_shapes_dict[model_name], 
+        markersize=method_outline_sizes_dict[model_name], 
+        linewidth=0,
+        zorder=20
+    )
     dots, = axs2.plot(xtickvals, mae_method_series_dict[model_name]["med"], 
         color=method_colors_dict[model_name], 
         marker=method_shapes_dict[model_name], 
@@ -183,7 +208,7 @@ for model_name in model_names_list:
         linewidth=0,
         zorder=30
     )
-    legend_artists.append((dashes, dots))
+    legend_artists.append((dashes, outline, dots))
     legend_labels.append(model_print_names[model_name])
 
 axs2.set_ylim(0.0,10)
