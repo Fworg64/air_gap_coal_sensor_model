@@ -424,20 +424,43 @@ for idx, filename in enumerate(good_files_list):
     #    data_files_dict[filename]["Time (s)"], 
     #    data_files_dict[filename]["Poly FFNN Fit Force (kN)"],
     #    color='magenta', label="Poly FFNN")
-    axes_ts_list[axes_dex][row_dex][col_dex].set_ylim(-10, 65)
+    axes_ts_list[axes_dex][row_dex][col_dex].set_ylim(-5, 85)
+
+    # Only label outside axes
     if row_dex == 1:
       axes_ts_list[axes_dex][row_dex][col_dex].set_xlabel("Time (s)")
     if col_dex == 0:
       axes_ts_list[axes_dex][row_dex][col_dex].set_ylabel("Force (kN)")
+
+    # Plot coal region as patch and text begin 1.2 s, solid 1.6 to 3.6, end 4
+    
+    # Solid Fill w/ gradient
+    steps = 19
+    grad_len = 0.4
+    coal_color = "lightgrey"
+    for width in range(steps):
+      axes_ts_list[axes_dex][row_dex][col_dex].fill_between(
+          (1.2 + width*grad_len/steps, 1.2 + (width+1)*grad_len/steps), 
+          -100, 100, color=coal_color, alpha=width/steps, linewidth=0)
+    axes_ts_list[axes_dex][row_dex][col_dex].fill_between((1.6, 3.6), -100, 100, color=coal_color)
+    for width in range(steps):
+      axes_ts_list[axes_dex][row_dex][col_dex].fill_between(
+          (3.6 + width*grad_len/steps, 3.6 + (width+1)*grad_len/steps), 
+          -100, 100, color=coal_color, alpha=1.0 - width/steps, linewidth=0)
+
+    axes_ts_list[axes_dex][row_dex][col_dex].text(0.0, 5, "Concrete", color="black")
+    axes_ts_list[axes_dex][row_dex][col_dex].text(2.4, 25, "Coal", color="black")
+    axes_ts_list[axes_dex][row_dex][col_dex].text(4.0, 5, "Concrete", color="black")
+
     #axes_ts_list[axes_dex][row_dex][col_dex].text(1.00,70, filename)
     axes_ts_list[axes_dex][row_dex][col_dex].set_title(filename)
     leg1 = axes_ts_list[axes_dex][row_dex][col_dex].legend(handles=[s1p, s2p, s3p, s4p], loc="upper center", title="Cap. Sensor")
     axes_ts_list[axes_dex][row_dex][col_dex].add_artist(leg1)
     axes_ts_list[axes_dex][row_dex][col_dex].legend(handles=[rawforce, filtforce], loc="upper right", title="Strain Gauges")
-    axes_ts_list[axes_dex][row_dex][col_dex].grid(True, which="minor", axis="both")
+    axes_ts_list[axes_dex][row_dex][col_dex].grid(True, which="minor", axis="both", color="black", linewidth=0.25)
     axes_ts_list[axes_dex][row_dex][col_dex].minorticks_on()
     axes_ts_list[axes_dex][row_dex][col_dex].tick_params(which="minor", bottom=False, left=False)
-    axes_ts_list[axes_dex][row_dex][col_dex].grid(True, which="major", axis="both", linewidth=1, color='k')
+    axes_ts_list[axes_dex][row_dex][col_dex].grid(True, which="major", axis="both", linewidth=1, color='black')
 
     
 

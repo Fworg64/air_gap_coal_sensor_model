@@ -111,18 +111,18 @@ for model_name in model_names_list:
     )
 
     dashes, = axs1.plot(xtickvals, r2_method_series_dict[model_name]["med"], 
-        label=model_name, color='k', linestyle='--', linewidth=1.8,
+        label=model_name, color=method_colors_dict[model_name], linestyle='--', linewidth=1.8,
         zorder=10
     )
     
     q1dashes, = axs1.plot(xtickvals, r2_method_series_dict[model_name]["q1"], 
-        label=model_name, color=method_colors_dict[model_name], 
-        linestyle='--', linewidth=1.8,
+        label=model_name, color='k',
+        linestyle=':', linewidth=1.8,
         zorder=10
     )
     q3dashes, = axs1.plot(xtickvals, r2_method_series_dict[model_name]["q3"], 
-        label=model_name, color=method_colors_dict[model_name], 
-        linestyle='--', linewidth=1.8,
+        label=model_name, color='k',
+        linestyle=':', linewidth=1.8,
         zorder=10
     )
 
@@ -162,17 +162,17 @@ for model_name in model_names_list:
     )
 
     dashes, = axs2.plot(xtickvals, mae_method_series_dict[model_name]["med"], 
-        label=model_name, color='k', linestyle='--', linewidth=1.8,
+        label=model_name, color=method_colors_dict[model_name],  linestyle='--', linewidth=1.8,
         zorder=10
     )
     q1dashes, = axs2.plot(xtickvals, mae_method_series_dict[model_name]["q1"], 
-        label=model_name, color=method_colors_dict[model_name], 
-        linestyle='--', linewidth=1.8,
+        label=model_name, color='k',
+        linestyle=':', linewidth=1.8,
         zorder=10
     )
     q3dashes, = axs2.plot(xtickvals, mae_method_series_dict[model_name]["q3"], 
-        label=model_name, color=method_colors_dict[model_name], 
-        linestyle='--', linewidth=1.8,
+        label=model_name, color='k',
+        linestyle=':', linewidth=1.8,
         zorder=10
     )
 
