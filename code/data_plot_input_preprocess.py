@@ -236,36 +236,6 @@ ffnn = MLPRegressor(
 
 ffnn_y_hat = ffnn.predict(x_vals)
 
-##
-# Numerically estimate transfer function via cross-spectral density and psd
-# Hbar = Pyx / Pxx; 
-# Estimate linear system between output of ffnn and chosen regression target
-##
-
-csd_freqs, Pyx = signal.csd(y_vals, ffnn_y_hat, fs=sample_freq)
-psd_freqs, Pxx = signal.welch(ffnn_y_hat, fs=sample_freq)
-
-Hbar = np.divide(np.real(Pyx), Pxx)
-
-fig0, axes0 = plt.subplots(2, 2)
-
-axes0[0,0].plot(csd_freqs, np.real(Pyx))
-axes0[0,0].plot(csd_freqs, np.imag(Pyx))
-axes0[0,0].set_title("Pyx")
-axes0[0,0].set_yscale("log")
-axes0[0,1].plot(psd_freqs, Pxx)
-axes0[0,1].set_title("Pxx")
-axes0[0,1].set_yscale("log")
-axes0[1,0].plot(psd_freqs, np.real(Hbar))
-axes0[1,0].plot(psd_freqs, np.imag(Hbar))
-axes0[1,0].set_title("Hbar real and imag")
-axes0[1,0].set_yscale("log")
-axes0[1,1].plot(psd_freqs, np.abs(Hbar))
-axes0[1,1].plot(psd_freqs, np.angle(Hbar))
-axes0[1,1].set_title("Hbar abs and phase")
-axes0[1,1].set_yscale("log")
-
-
 print("ffnn MSE: ")
 print(mean_squared_error(y_vals, ffnn_y_hat))
 print("ffnn MAE: ")
@@ -319,6 +289,84 @@ print("Models fit in {0} sec; plotting experiments".format(that_time - this_time
       end='\n', flush=True)
 this_time = time.time()
 
+##
+# Numerically estimate transfer function via cross-spectral density and psd
+# Hbar = Pyx / Pxx; Do for poly ffnn
+# Estimate linear system between output of ffnn and chosen regression target
+##
+
+psd_freqs, Pxx = signal.welch(poly_ffnn_y_hat, fs=sample_freq)
+ypsd_freqs, Pyy = signal.welch(y_vals, fs=sample_freq)
+csd_freqs, Pyx = signal.csd(y_vals, poly_ffnn_y_hat, fs=sample_freq)
+
+# Get psd's for each channel 
+chan_psd_freqs, chan_psd = signal.welch(x_vals, axis=0, fs=sample_freq)
+
+#Hbar = np.divide(np.real(Pyx), Pxx)
+Hbar = np.divide(Pyx, Pxx)
+
+#fig0, axes0 = plt.subplots(2, 2)
+fig0 = plt.figure()
+
+gs = fig0.add_gridspec(2,2)
+axes0 = []
+axes0.append(fig0.add_subplot(gs[0, 0])) # Pyy and Pxx, top left
+axes0.append(fig0.add_subplot(gs[1, 0])) # Pyx, bottom left
+axes0.append(fig0.add_subplot(gs[:, 1])) # Hbar, right side
+
+# Cross spectral density
+axes0[0].plot(chan_psd_freqs, np.abs(chan_psd[:, 0]), 
+    label="Chan A", linestyle=":", color="#1F0322")
+axes0[0].plot(chan_psd_freqs, np.abs(chan_psd[:, 1]), 
+    label="Chan B", linestyle=":", color="#8A1C7C")
+axes0[0].plot(chan_psd_freqs, np.abs(chan_psd[:, 2]), 
+    label="Chan C", linestyle=":", color="#DA4167")
+axes0[0].plot(chan_psd_freqs, np.abs(chan_psd[:, 3]), 
+    label="Chan D", linestyle=":", color="#F0BCD4")
+axes0[0].plot(ypsd_freqs, np.abs(Pyy), 
+    color="magenta", label="Pyy, Target Force")
+axes0[0].plot(psd_freqs, np.abs(Pxx), 
+    color="#3EA06D", label="Pxx, Poly FFNN Output")
+
+axes0[0].set_title("Pyy and Pxx")
+axes0[0].set_yscale("log")
+axes0[0].set_ylim( 1e-6, 1e2)
+axes0[0].legend(ncol=2, loc="upper right")
+axes0[0].set_ylabel("Spectral Density")
+axes0[0].set_xlabel("Frequency (Hz)")
+
+#axes0[0,1].plot(psd_freqs, np.abs(Pxx), color="blue", label="Magnitude")
+#axes0[0,1].legend()
+#axes01_2 = axes0[0,1].twinx()
+#axes01_2.plot(psd_freqs, np.angle(Pxx), color="orange", label="Phase")
+#axes01_2.legend()
+#axes0[0,1].set_title("Pxx")
+#axes0[0,1].set_yscale("log")
+
+axes0[1].plot(csd_freqs, np.abs(Pyx), color="purple", label="Magnitude")
+axes0[1].legend(loc="upper center")
+axes10_2 = axes0[1].twinx()
+axes10_2.plot(csd_freqs, np.angle(Pyx), color="orange", label="Phase")
+axes10_2.legend(loc="upper right")
+axes10_2.set_ylabel("Phase (Rad.)")
+axes0[1].set_title("Pyx: Sensor and Target Cross Spectrum")
+axes0[1].set_yscale("log")
+axes0[1].set_ylabel("Spectral Density")
+axes0[1].set_xlabel("Frequency (Hz)")
+
+axes0[2].plot(psd_freqs, np.abs(Hbar), color="purple", label="Magnitude")
+axes0[2].legend(loc="upper center")
+axes11_2 = axes0[2].twinx()
+axes11_2.plot(psd_freqs, np.angle(Hbar), color="orange", label="Phase")
+axes11_2.legend(loc="upper right")
+axes11_2.set_ylabel("Phase (Rad.)")
+axes0[2].set_title("Hbar = Pyx / Pxx. Sensor to Target TF")
+axes0[2].set_yscale("log")
+axes0[2].set_ylabel("Power Spectral Density Magnitude")
+axes0[2].set_xlabel("Frequency (Hz)")
+
+plt.suptitle("Finding Transfer Function between Sensor and Target")
+
 # Plot bias adjusted traces
 num_plot_rows = 2
 num_plot_cols = 2
@@ -351,43 +399,45 @@ for idx, filename in enumerate(good_files_list):
     axes_list[axes_dex][row_dex][col_dex].scatter(
             data_list_dict[filename][f"{force_key} Force (kN)"], 
             data_list_dict[filename][f"{predictor_key} Freq. A (MHz)"], 
-            label="Chan A", marker='x', color="blue", s=2)
+            label="Chan A", marker='o', color="#1F0322", s=4)
     axes_list[axes_dex][row_dex][col_dex].scatter(
             data_list_dict[filename][f"{force_key} Force (kN)"], 
             data_list_dict[filename][f"{predictor_key} Freq. B (MHz)"], 
-            label="Chan B", marker='+', color="blue", s=2)
+            label="Chan B", marker='o', color="#8A1C7C", s=4)
     axes_list[axes_dex][row_dex][col_dex].scatter(
             data_list_dict[filename][f"{force_key} Force (kN)"], 
             data_list_dict[filename][f"{predictor_key} Freq. C (MHz)"], 
-            label="Chan C", marker='o', color="blue", s=2)
+            label="Chan C", marker='o', color="#DA4167", s=4)
     axes_list[axes_dex][row_dex][col_dex].scatter(
             data_list_dict[filename][f"{force_key} Force (kN)"], 
-            data_list_dict[filename][f"{predictor_key} Freq. C (MHz)"], 
-            label="Chan D", marker='*', color="blue", s=2)
+            data_list_dict[filename][f"{predictor_key} Freq. D (MHz)"], 
+            label="Chan D", marker='o', color="#F0BCD4", s=4)
     # Plot model fits on twin'd x axis
     twin_force_axis = axes_list[axes_dex][row_dex][col_dex].twinx()
     twin_force_axis.scatter(
         data_list_dict[filename][f"{force_key} Force (kN)"], 
-        data_files_dict[filename]["Lin Est Force (kN)"], c='red', label='Linear')
+        data_files_dict[filename]["Lin Est Force (kN)"], c='#7E58A0', label='Lin. Reg.', marker="x", s=20)
+    #twin_force_axis.scatter(
+    #    data_list_dict[filename][f"{force_key} Force (kN)"], 
+    #    data_files_dict[filename]["Poly Fit Force (kN)"], c='purple', label='Quadratic')
+    #twin_force_axis.scatter(
+    #    data_list_dict[filename][f"{force_key} Force (kN)"], 
+    #    data_files_dict[filename]["FFNN Fit Force (kN)"], c='yellow',
+    #    marker='D', s=3, label='Neural Net')
     twin_force_axis.scatter(
         data_list_dict[filename][f"{force_key} Force (kN)"], 
-        data_files_dict[filename]["Poly Fit Force (kN)"], c='purple', label='Quadratic')
-    twin_force_axis.scatter(
-        data_list_dict[filename][f"{force_key} Force (kN)"], 
-        data_files_dict[filename]["FFNN Fit Force (kN)"], c='black',
-        marker='D', s=3, label='Neural Net')
-    twin_force_axis.scatter(
-        data_list_dict[filename][f"{force_key} Force (kN)"], 
-        data_files_dict[filename]["Poly FFNN Fit Force (kN)"], c='yellow',
-        marker='D', s=3, label='Poly Neural Net')
+        data_files_dict[filename]["Poly FFNN Fit Force (kN)"], c='#3EA06D',
+        marker='*', s=25, label='Poly FFNN')
+    twin_force_axis.plot([0,50], [0,50], c="magenta", linestyle='-', linewidth=1.8, label="Target Force")
     twin_force_axis.set_ylabel("Estimated Force")
     twin_force_axis.set_ylim(-5,50)
+    twin_force_axis.legend(loc="lower right")
 
-    axes_list[axes_dex][row_dex][col_dex].legend(loc="lower right")
+    axes_list[axes_dex][row_dex][col_dex].legend(loc="upper left")
     axes_list[axes_dex][row_dex][col_dex].set_ylabel("Freq. Deviation (kHz)")
     axes_list[axes_dex][row_dex][col_dex].set_xlabel("Force (kN)")
 
-    axes_list[axes_dex][row_dex][col_dex].text(-115, 70, filename)
+    axes_list[axes_dex][row_dex][col_dex].set_title(filename)
     axes_list[axes_dex][row_dex][col_dex].set_ylim(-10, 100)
     #axes_list[axes_dex][row_dex][col_dex].set_xlim(1.65, 1.85)
     axes_list[axes_dex][row_dex][col_dex].set_xlim(-5, 50)
