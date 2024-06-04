@@ -29,9 +29,9 @@ import pdb
 ##
 # Set Figures
 ##
-SMALL_SIZE = 18
-MEDIUM_SIZE = 26
-SMALLER_SIZE = 18
+SMALL_SIZE = 22
+MEDIUM_SIZE = 28
+SMALLER_SIZE = 20
 
 plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
 plt.rc('axes', titlesize=MEDIUM_SIZE)     # fontsize of the axes title
@@ -474,7 +474,7 @@ for idx, filename in enumerate(good_files_list):
     #    data_files_dict[filename]["Time (s)"], 
     #    data_files_dict[filename]["Poly FFNN Fit Force (kN)"],
     #    color='magenta', label="Poly FFNN")
-    axes_ts_list[axes_dex][row_dex][col_dex].set_ylim(-5, 85)
+    axes_ts_list[axes_dex][row_dex][col_dex].set_ylim(-10, 85)
 
     # Only label outside axes
     if row_dex == 1:
@@ -498,9 +498,9 @@ for idx, filename in enumerate(good_files_list):
           (3.6 + width*grad_len/steps, 3.6 + (width+1)*grad_len/steps), 
           -100, 100, color=coal_color, alpha=1.0 - width/steps, linewidth=0)
 
-    axes_ts_list[axes_dex][row_dex][col_dex].text(0.0, 5, "Concrete", color="black")
-    axes_ts_list[axes_dex][row_dex][col_dex].text(2.4, 25, "Coal", color="black")
-    axes_ts_list[axes_dex][row_dex][col_dex].text(4.0, 5, "Concrete", color="black")
+    axes_ts_list[axes_dex][row_dex][col_dex].text(0.05, -7, "Concrete", color="black")
+    axes_ts_list[axes_dex][row_dex][col_dex].text(2.15, -7, "Coal", color="black")
+    axes_ts_list[axes_dex][row_dex][col_dex].text(4.05, -7, "Concrete", color="black")
 
     #axes_ts_list[axes_dex][row_dex][col_dex].text(1.00,70, filename)
     axes_ts_list[axes_dex][row_dex][col_dex].set_title(filename)
